@@ -16,16 +16,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'ad-file-upload'`, () => {
+  it(`should have as title 'ad-file-upload-project'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('ad-file-upload');
+    expect(app.title).toEqual('ad-file-upload-project');
   });
 
   it('should render title in a h1 tag', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to ad-file-upload!');
+    expect(compiled.querySelector('h1').textContent).toContain('Welcome to ad-file-upload-project!');
   });
 });

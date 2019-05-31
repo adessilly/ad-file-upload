@@ -17,6 +17,14 @@
     "lib": [
       "es2018",
       "dom"
-    ]
+    ],
+    "paths": {
+      "ad-file-upload": [
+        "dist/ad-file-upload"
+      ],
+      "ad-file-upload/*": [
+        "dist/ad-file-upload/*"
+      ]
+    }
   }
 }
