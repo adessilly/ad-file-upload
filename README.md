@@ -6,9 +6,11 @@ Fork of https://github.com/valor-software/ng2-file-upload/tree/development/src/f
 ## How to edit your code from ng2-file-upload
 
 - *in your modules* :
+```
 import { FileUploadModule } from 'ng2-file-upload/ng2-file-upload';
 by
 import { AdFileUploadModule } from 'ad-file-upload';
+```
 
 - in *components html* : 
    - replace all **ng2FileDrop** by **adFileDrop**
