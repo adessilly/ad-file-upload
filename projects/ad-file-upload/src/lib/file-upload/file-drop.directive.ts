@@ -1,28 +1,30 @@
-import { Directive, EventEmitter, ElementRef, HostListener, Input, Output } from '@angular/core';
+import { Directive, ElementRef, inject, input, output } from '@angular/core';
 
 import { FileUploader, FileUploaderOptions } from './file-uploader.class';
 
-@Directive({ selector: '[adFileDrop]' })
-export class FileDropDirective {
-  @Input() public uploader: FileUploader;
-  @Output() public fileOver: EventEmitter<any> = new EventEmitter();
-  @Output() public onFileDrop: EventEmitter<File[]> = new EventEmitter<File[]>();
-
-  protected element: ElementRef;
-
-  public constructor(element: ElementRef) {
-    this.element = element;
+@Directive({
+  selector: '[adFileDrop]',
+  host: {
+    '(drop)': 'onDrop($event)',
+    '(dragover)': 'onDragOver($event)',
+    '(dragleave)': 'onDragLeave($event)'
   }
+})
+export class FileDropDirective {
+  public readonly uploader = input.required<FileUploader>();
+  public readonly fileOver = output<boolean>();
+  public readonly onFileDrop = output<File[]>();
+
+  protected element = inject(ElementRef);
 
   public getOptions(): FileUploaderOptions {
-    return this.uploader.options;
+    return this.uploader().options;
   }
 
   public getFilters(): any {
     return {};
   }
 
-  @HostListener('drop', [ '$event' ])
   public onDrop(event: any): void {
     let transfer = this._getTransfer(event);
     if (!transfer) {
@@ -32,12 +34,11 @@ export class FileDropDirective {
     let options = this.getOptions();
     let filters = this.getFilters();
     this._preventAndStop(event);
-    this.uploader.addToQueue(transfer.files, options, filters);
+    this.uploader().addToQueue(transfer.files, options, filters);
     this.fileOver.emit(false);
     this.onFileDrop.emit(transfer.files);
   }
 
-  @HostListener('dragover', [ '$event' ])
   public onDragOver(event: any): void {
     let transfer = this._getTransfer(event);
     if (!this._haveFiles(transfer.types)) {
@@ -49,7 +50,6 @@ export class FileDropDirective {
     this.fileOver.emit(true);
   }
 
-  @HostListener('dragleave', [ '$event' ])
   public onDragLeave(event: any): any {
     if ((this as any).element) {
       if (event.currentTarget === (this as any).element[ 0 ]) {

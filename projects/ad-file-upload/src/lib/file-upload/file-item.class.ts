@@ -17,8 +17,8 @@ export class FileItem {
   public isCancel: boolean = false;
   public isError: boolean = false;
   public progress: number = 0;
-  public index: number = void 0;
-  public _xhr: XMLHttpRequest;
+  public index?: number = void 0;
+  public _xhr?: XMLHttpRequest;
   public _form: any;
 
   protected uploader: FileUploader;
@@ -31,11 +31,9 @@ export class FileItem {
     this.options = options;
     this.file = new FileLikeObject(some);
     this._file = some;
-    if (uploader.options) {
-      this.method = uploader.options.method || 'POST';
-      this.alias = uploader.options.itemAlias || 'file';
-    }
-    this.url = uploader.options.url;
+    this.method = uploader.options.method || 'POST';
+    this.alias = uploader.options.itemAlias || 'file';
+    this.url = uploader.options.url ?? '/';
   }
 
   public upload(): void {

@@ -1,0 +1,44 @@
+.demo {
+  max-width: 640px;
+  margin: 2rem auto;
+  font-family: system-ui, sans-serif;
+}
+
+.drop-zone {
+  border: 2px dashed #999;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: border-color 0.15s, background-color 0.15s;
+
+  &--over {
+    border-color: #1976d2;
+    background-color: #e3f2fd;
+  }
+}
+
+.file-input {
+  display: block;
+  margin: 1rem 0;
+}
+
+.queue {
+  list-style: none;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+  }
+
+  &__empty {
+    color: #777;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}

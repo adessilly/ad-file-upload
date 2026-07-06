@@ -1,4 +1,4 @@
-import { EventEmitter } from '@angular/core';
+import { Subject } from 'rxjs';
 import { FileLikeObject } from './file-like-object.class';
 import { FileItem } from './file-item.class';
 import { FileType } from './file-type.class';
@@ -43,14 +43,14 @@ export interface FileUploaderOptions {
 
 export class FileUploader {
 
-  public authToken: string;
+  public authToken?: string;
   public isUploading: boolean = false;
   public queue: FileItem[] = [];
   public progress: number = 0;
   public _nextIndex: number = 0;
   public autoUpload: any;
-  public authTokenHeader: string;
-  public response: EventEmitter<any>;
+  public authTokenHeader: string = 'Authorization';
+  public response: Subject<string> = new Subject<string>();
 
   public options: FileUploaderOptions = {
     autoUpload: false,
@@ -62,11 +62,10 @@ export class FileUploader {
     formatDataFunctionIsAsync: false
   };
 
-  protected _failFilterIndex: number;
+  protected _failFilterIndex: number = -1;
 
   public constructor(options: FileUploaderOptions) {
     this.setOptions(options);
-    this.response = new EventEmitter<any>();
   }
 
   public setOptions(options: FileUploaderOptions): void {
@@ -75,22 +74,23 @@ export class FileUploader {
     this.authToken = this.options.authToken;
     this.authTokenHeader = this.options.authTokenHeader || 'Authorization';
     this.autoUpload = this.options.autoUpload;
-    this.options.filters.unshift({ name: 'queueLimit', fn: this._queueLimitFilter });
+    const filters = this.options.filters ??= [];
+    filters.unshift({ name: 'queueLimit', fn: this._queueLimitFilter });
 
     if (this.options.maxFileSize) {
-      this.options.filters.unshift({ name: 'fileSize', fn: this._fileSizeFilter });
+      filters.unshift({ name: 'fileSize', fn: this._fileSizeFilter });
     }
 
     if (this.options.allowedFileType) {
-      this.options.filters.unshift({ name: 'fileType', fn: this._fileTypeFilter });
+      filters.unshift({ name: 'fileType', fn: this._fileTypeFilter });
     }
 
     if (this.options.allowedMimeType) {
-      this.options.filters.unshift({ name: 'mimeType', fn: this._mimeTypeFilter });
+      filters.unshift({ name: 'mimeType', fn: this._mimeTypeFilter });
     }
 
     for (let i = 0; i < this.queue.length; i++) {
-      this.queue[ i ].url = this.options.url;
+      this.queue[ i ].url = this.options.url ?? '/';
     }
   }
 
@@ -162,7 +162,7 @@ export class FileUploader {
     let item = this.queue[ index ];
     let prop = this.options.isHTML5 ? item._xhr : item._form;
     if (item && item.isUploading) {
-      prop.abort();
+      prop?.abort();
     }
   }
 
@@ -254,16 +254,16 @@ export class FileUploader {
     return void 0;
   }
 
-  public _mimeTypeFilter(item: FileLikeObject): boolean {
-    return !(this.options.allowedMimeType && this.options.allowedMimeType.indexOf(item.type) === -1);
+  public _mimeTypeFilter(item?: FileLikeObject): boolean {
+    return !(this.options.allowedMimeType && item && this.options.allowedMimeType.indexOf(item.type) === -1);
   }
 
-  public _fileSizeFilter(item: FileLikeObject): boolean {
-    return !(this.options.maxFileSize && item.size > this.options.maxFileSize);
+  public _fileSizeFilter(item?: FileLikeObject): boolean {
+    return !(this.options.maxFileSize && item && item.size > this.options.maxFileSize);
   }
 
-  public _fileTypeFilter(item: FileLikeObject): boolean {
-    return !(this.options.allowedFileType &&
+  public _fileTypeFilter(item?: FileLikeObject): boolean {
+    return !(this.options.allowedFileType && item &&
       this.options.allowedFileType.indexOf(FileType.getMimeClass(item)) === -1);
   }
 
@@ -314,9 +314,10 @@ export class FileUploader {
       }
 
       // For AWS, Additional Parameters must come BEFORE Files
-      if (this.options.additionalParameter !== undefined) {
-        Object.keys(this.options.additionalParameter).forEach((key: string) => {
-          let paramVal = this.options.additionalParameter[ key ];
+      const additionalParameter = this.options.additionalParameter;
+      if (additionalParameter !== undefined) {
+        Object.keys(additionalParameter).forEach((key: string) => {
+          let paramVal = additionalParameter[ key ];
           // Allow an additional parameter to include the filename
           if (typeof paramVal === 'string' && paramVal.indexOf('{{file_name}}') >= 0) {
             paramVal = paramVal.replace('{{file_name}}', item.file.name);
@@ -329,7 +330,7 @@ export class FileUploader {
         appendFile();
       }
     } else {
-      sendable = this.options.formatDataFunction(item);
+      sendable = this.options.formatDataFunction?.(item);
     }
 
     xhr.upload.onprogress = (event: any) => {
@@ -373,9 +374,9 @@ export class FileUploader {
     }
     xhr.onreadystatechange = function () {
       if (xhr.readyState == XMLHttpRequest.DONE) {
-        that.response.emit(xhr.responseText)
+        that.response.next(xhr.responseText);
       }
-    }
+    };
     if (this.options.formatDataFunctionIsAsync) {
       sendable.then(
         (result: any) => xhr.send(JSON.stringify(result))
@@ -397,19 +398,19 @@ export class FileUploader {
     return Math.round(uploaded * ratio + current);
   }
 
-  protected _getFilters(filters: FilterFunction[] | string): FilterFunction[] {
+  protected _getFilters(filters?: FilterFunction[] | string): FilterFunction[] {
     if (!filters) {
-      return this.options.filters;
+      return this.options.filters ?? [];
     }
     if (Array.isArray(filters)) {
       return filters;
     }
     if (typeof filters === 'string') {
-      let names = filters.match(/[^\s,]+/g);
-      return this.options.filters
-        .filter((filter: any) => names.indexOf(filter.name) !== -1);
+      const names: string[] = filters.match(/[^\s,]+/g) ?? [];
+      return (this.options.filters ?? [])
+        .filter((filter: FilterFunction) => names.indexOf(filter.name) !== -1);
     }
-    return this.options.filters;
+    return this.options.filters ?? [];
   }
 
   protected _render(): any {

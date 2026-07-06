@@ -1,20 +1,21 @@
-import { Directive, EventEmitter, ElementRef, Input, HostListener, Output } from '@angular/core';
+import { Directive, ElementRef, inject, input, output } from '@angular/core';
 
 import { FileUploader } from './file-uploader.class';
 
-@Directive({ selector: '[adFileSelect]' })
-export class FileSelectDirective {
-  @Input() public uploader: FileUploader;
-  @Output() public onFileSelected: EventEmitter<File[]> = new EventEmitter<File[]>();
-
-  protected element: ElementRef;
-
-  public constructor(element: ElementRef) {
-    this.element = element;
+@Directive({
+  selector: '[adFileSelect]',
+  host: {
+    '(change)': 'onChange()'
   }
+})
+export class FileSelectDirective {
+  public readonly uploader = input.required<FileUploader>();
+  public readonly onFileSelected = output<File[]>();
+
+  protected element = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
   public getOptions(): any {
-    return this.uploader.options;
+    return this.uploader().options;
   }
 
   public getFilters(): any {
@@ -22,17 +23,19 @@ export class FileSelectDirective {
   }
 
   public isEmptyAfterSelection(): boolean {
-    return !!this.element.nativeElement.attributes.multiple;
+    return !!this.element.nativeElement.attributes.getNamedItem('multiple');
   }
 
-  @HostListener('change')
   public onChange(): any {
     let files = this.element.nativeElement.files;
+    if (!files) {
+      return;
+    }
     let options = this.getOptions();
     let filters = this.getFilters();
 
-    this.uploader.addToQueue(files, options, filters);
-    this.onFileSelected.emit(files);
+    this.uploader().addToQueue(Array.from(files), options, filters);
+    this.onFileSelected.emit(Array.from(files));
 
     if (this.isEmptyAfterSelection()) {
       this.element.nativeElement.value = '';
